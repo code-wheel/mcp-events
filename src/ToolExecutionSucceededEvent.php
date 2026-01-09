@@ -13,7 +13,7 @@ namespace CodeWheel\McpEvents;
  * - Audit trails
  * - Usage analytics
  */
-final class ToolExecutionSucceededEvent {
+final class ToolExecutionSucceededEvent implements \JsonSerializable {
 
   /**
    * @param string $toolName
@@ -38,5 +38,19 @@ final class ToolExecutionSucceededEvent {
     public readonly float $durationMs,
     public readonly string|int|null $requestId,
   ) {}
+
+  /**
+   * {@inheritdoc}
+   */
+  public function jsonSerialize(): array {
+    return [
+      'event' => 'tool_execution_succeeded',
+      'tool_name' => $this->toolName,
+      'plugin_id' => $this->pluginId,
+      'arguments' => $this->arguments,
+      'duration_ms' => $this->durationMs,
+      'request_id' => $this->requestId,
+    ];
+  }
 
 }

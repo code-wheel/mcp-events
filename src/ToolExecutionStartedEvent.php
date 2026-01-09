@@ -13,7 +13,7 @@ namespace CodeWheel\McpEvents;
  * - Request tracing/correlation
  * - Rate limiting checks
  */
-final class ToolExecutionStartedEvent {
+final class ToolExecutionStartedEvent implements \JsonSerializable {
 
   /**
    * @param string $toolName
@@ -34,5 +34,19 @@ final class ToolExecutionStartedEvent {
     public readonly string|int|null $requestId,
     public readonly float $timestamp,
   ) {}
+
+  /**
+   * {@inheritdoc}
+   */
+  public function jsonSerialize(): array {
+    return [
+      'event' => 'tool_execution_started',
+      'tool_name' => $this->toolName,
+      'plugin_id' => $this->pluginId,
+      'arguments' => $this->arguments,
+      'request_id' => $this->requestId,
+      'timestamp' => $this->timestamp,
+    ];
+  }
 
 }

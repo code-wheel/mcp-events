@@ -13,7 +13,7 @@ namespace CodeWheel\McpEvents;
  * - Error rate monitoring
  * - Incident tracking
  */
-final class ToolExecutionFailedEvent {
+final class ToolExecutionFailedEvent implements \JsonSerializable {
 
   // Standard failure reason constants.
   public const REASON_VALIDATION = 'validation_failed';
@@ -110,6 +110,30 @@ final class ToolExecutionFailedEvent {
    */
   public function hasException(): bool {
     return $this->exception !== null;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function jsonSerialize(): array {
+    $data = [
+      'event' => 'tool_execution_failed',
+      'tool_name' => $this->toolName,
+      'plugin_id' => $this->pluginId,
+      'arguments' => $this->arguments,
+      'reason' => $this->reason,
+      'duration_ms' => $this->durationMs,
+      'request_id' => $this->requestId,
+      'is_policy_failure' => $this->isPolicyFailure(),
+      'has_exception' => $this->hasException(),
+    ];
+
+    if ($this->exception !== null) {
+      $data['exception_class'] = $this->exception::class;
+      $data['exception_message'] = $this->exception->getMessage();
+    }
+
+    return $data;
   }
 
 }

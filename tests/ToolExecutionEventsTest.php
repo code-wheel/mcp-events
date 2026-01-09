@@ -303,4 +303,131 @@ final class ToolExecutionEventsTest extends TestCase {
     $this->assertFalse(ToolExecutionFailedEvent::isValidReason('VALIDATION_FAILED'));
   }
 
+  public function testToolExecutionStartedEventJsonSerialize(): void {
+    $timestamp = 1704067200.123456;
+    $event = new ToolExecutionStartedEvent(
+      toolName: 'test_tool',
+      pluginId: 'my_module.test_tool',
+      arguments: ['key' => 'value'],
+      requestId: 'req-123',
+      timestamp: $timestamp,
+    );
+
+    $json = $event->jsonSerialize();
+
+    $this->assertSame('tool_execution_started', $json['event']);
+    $this->assertSame('test_tool', $json['tool_name']);
+    $this->assertSame('my_module.test_tool', $json['plugin_id']);
+    $this->assertSame(['key' => 'value'], $json['arguments']);
+    $this->assertSame('req-123', $json['request_id']);
+    $this->assertSame($timestamp, $json['timestamp']);
+
+    // Verify it works with json_encode
+    $encoded = json_encode($event);
+    $this->assertIsString($encoded);
+    $this->assertStringContainsString('tool_execution_started', $encoded);
+  }
+
+  public function testToolExecutionSucceededEventJsonSerialize(): void {
+    $result = new \stdClass();
+    $result->isError = false;
+
+    $event = new ToolExecutionSucceededEvent(
+      toolName: 'test_tool',
+      pluginId: 'my_module.test_tool',
+      arguments: ['key' => 'value'],
+      result: $result,
+      durationMs: 42.5,
+      requestId: 'req-456',
+    );
+
+    $json = $event->jsonSerialize();
+
+    $this->assertSame('tool_execution_succeeded', $json['event']);
+    $this->assertSame('test_tool', $json['tool_name']);
+    $this->assertSame('my_module.test_tool', $json['plugin_id']);
+    $this->assertSame(['key' => 'value'], $json['arguments']);
+    $this->assertSame(42.5, $json['duration_ms']);
+    $this->assertSame('req-456', $json['request_id']);
+    // Result is intentionally not serialized (may contain sensitive data)
+    $this->assertArrayNotHasKey('result', $json);
+
+    // Verify it works with json_encode
+    $encoded = json_encode($event);
+    $this->assertIsString($encoded);
+    $this->assertStringContainsString('tool_execution_succeeded', $encoded);
+  }
+
+  public function testToolExecutionFailedEventJsonSerializeWithoutException(): void {
+    $event = new ToolExecutionFailedEvent(
+      toolName: 'test_tool',
+      pluginId: 'my_module.test_tool',
+      arguments: ['key' => 'value'],
+      reason: ToolExecutionFailedEvent::REASON_VALIDATION,
+      result: null,
+      exception: null,
+      durationMs: 10.0,
+      requestId: 'req-789',
+    );
+
+    $json = $event->jsonSerialize();
+
+    $this->assertSame('tool_execution_failed', $json['event']);
+    $this->assertSame('test_tool', $json['tool_name']);
+    $this->assertSame('my_module.test_tool', $json['plugin_id']);
+    $this->assertSame(['key' => 'value'], $json['arguments']);
+    $this->assertSame('validation_failed', $json['reason']);
+    $this->assertSame(10.0, $json['duration_ms']);
+    $this->assertSame('req-789', $json['request_id']);
+    $this->assertFalse($json['is_policy_failure']);
+    $this->assertFalse($json['has_exception']);
+    $this->assertArrayNotHasKey('exception_class', $json);
+    $this->assertArrayNotHasKey('exception_message', $json);
+  }
+
+  public function testToolExecutionFailedEventJsonSerializeWithException(): void {
+    $exception = new \RuntimeException('Something went wrong');
+
+    $event = new ToolExecutionFailedEvent(
+      toolName: 'test_tool',
+      pluginId: 'my_module.test_tool',
+      arguments: [],
+      reason: ToolExecutionFailedEvent::REASON_EXECUTION,
+      result: null,
+      exception: $exception,
+      durationMs: 5.0,
+      requestId: null,
+    );
+
+    $json = $event->jsonSerialize();
+
+    $this->assertSame('tool_execution_failed', $json['event']);
+    $this->assertTrue($json['has_exception']);
+    $this->assertSame('RuntimeException', $json['exception_class']);
+    $this->assertSame('Something went wrong', $json['exception_message']);
+
+    // Verify it works with json_encode
+    $encoded = json_encode($event);
+    $this->assertIsString($encoded);
+    $this->assertStringContainsString('RuntimeException', $encoded);
+  }
+
+  public function testToolExecutionFailedEventJsonSerializeWithPolicyFailure(): void {
+    $event = new ToolExecutionFailedEvent(
+      toolName: 'test_tool',
+      pluginId: 'my_module.test_tool',
+      arguments: [],
+      reason: ToolExecutionFailedEvent::REASON_POLICY_DRY_RUN,
+      result: null,
+      exception: null,
+      durationMs: 0,
+      requestId: null,
+    );
+
+    $json = $event->jsonSerialize();
+
+    $this->assertTrue($json['is_policy_failure']);
+    $this->assertSame('policy_dry_run', $json['reason']);
+  }
+
 }
