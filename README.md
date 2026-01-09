@@ -179,6 +179,34 @@ if (ToolExecutionFailedEvent::isValidReason($reason)) {
 }
 ```
 
+## JSON Serialization
+
+All events implement `JsonSerializable` for easy logging:
+
+```php
+// Direct serialization
+$json = json_encode($event);
+
+// Or get the array
+$data = $event->jsonSerialize();
+
+// Example output for ToolExecutionFailedEvent:
+// {
+//   "event": "tool_execution_failed",
+//   "tool_name": "create_user",
+//   "plugin_id": "my_module.create_user",
+//   "reason": "validation_failed",
+//   "duration_ms": 12.5,
+//   "request_id": "req-123",
+//   "is_policy_failure": false,
+//   "has_exception": true,
+//   "exception_class": "InvalidArgumentException",
+//   "exception_message": "Email is required"
+// }
+```
+
+Note: The `result` object is intentionally excluded from serialization as it may contain sensitive data.
+
 ## Framework Integration
 
 This package has zero dependencies. When using with `mcp/sdk`, the `result` object will be a `CallToolResult`:
