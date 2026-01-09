@@ -12,6 +12,9 @@ use PHPUnit\Framework\TestCase;
 /**
  * Tests for MCP tool execution events.
  */
+#[\PHPUnit\Framework\Attributes\CoversClass(ToolExecutionStartedEvent::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(ToolExecutionSucceededEvent::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(ToolExecutionFailedEvent::class)]
 final class ToolExecutionEventsTest extends TestCase {
 
   public function testToolExecutionStartedEventProperties(): void {
@@ -41,6 +44,18 @@ final class ToolExecutionEventsTest extends TestCase {
     );
 
     $this->assertNull($event->requestId);
+  }
+
+  public function testToolExecutionStartedEventWithIntegerRequestId(): void {
+    $event = new ToolExecutionStartedEvent(
+      toolName: 'test_tool',
+      pluginId: 'my_module.test_tool',
+      arguments: [],
+      requestId: 42,
+      timestamp: microtime(true),
+    );
+
+    $this->assertSame(42, $event->requestId);
   }
 
   public function testToolExecutionSucceededEventProperties(): void {
@@ -86,6 +101,21 @@ final class ToolExecutionEventsTest extends TestCase {
     $this->assertFalse($event->result->isError);
   }
 
+  public function testToolExecutionSucceededEventWithIntegerRequestId(): void {
+    $result = new \stdClass();
+
+    $event = new ToolExecutionSucceededEvent(
+      toolName: 'test',
+      pluginId: 'test',
+      arguments: [],
+      result: $result,
+      durationMs: 0,
+      requestId: 123,
+    );
+
+    $this->assertSame(123, $event->requestId);
+  }
+
   public function testToolExecutionFailedEventProperties(): void {
     $exception = new \RuntimeException('Test error');
 
@@ -127,6 +157,21 @@ final class ToolExecutionEventsTest extends TestCase {
 
     $this->assertSame($result, $event->result);
     $this->assertTrue($event->result->isError);
+  }
+
+  public function testToolExecutionFailedEventWithIntegerRequestId(): void {
+    $event = new ToolExecutionFailedEvent(
+      toolName: 'test',
+      pluginId: 'test',
+      arguments: [],
+      reason: ToolExecutionFailedEvent::REASON_VALIDATION,
+      result: null,
+      exception: null,
+      durationMs: 0,
+      requestId: 999,
+    );
+
+    $this->assertSame(999, $event->requestId);
   }
 
   #[\PHPUnit\Framework\Attributes\DataProvider('policyFailureReasonProvider')]
