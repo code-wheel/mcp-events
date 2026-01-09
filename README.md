@@ -1,5 +1,11 @@
 # MCP Events
 
+[![CI](https://github.com/code-wheel/mcp-events/actions/workflows/ci.yml/badge.svg)](https://github.com/code-wheel/mcp-events/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/code-wheel/mcp-events/graph/badge.svg)](https://codecov.io/gh/code-wheel/mcp-events)
+[![Latest Stable Version](https://poser.pugx.org/code-wheel/mcp-events/v)](https://packagist.org/packages/code-wheel/mcp-events)
+[![PHP Version](https://img.shields.io/packagist/php-v/code-wheel/mcp-events.svg)](https://packagist.org/packages/code-wheel/mcp-events)
+[![License](https://poser.pugx.org/code-wheel/mcp-events/license)](https://packagist.org/packages/code-wheel/mcp-events)
+
 Standardized event classes for MCP (Model Context Protocol) tool execution lifecycle in PHP.
 
 **Zero dependencies** - pure PHP 8.1+, framework-agnostic.
