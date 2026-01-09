@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace CodeWheel\McpEvents;
 
-use Mcp\Schema\Result\CallToolResult;
-
 /**
  * Dispatched when an MCP tool execution fails.
  *
@@ -17,7 +15,7 @@ use Mcp\Schema\Result\CallToolResult;
  */
 final class ToolExecutionFailedEvent {
 
-  // Standard failure reason constants
+  // Standard failure reason constants.
   public const REASON_VALIDATION = 'validation_failed';
   public const REASON_ACCESS_DENIED = 'access_denied';
   public const REASON_INSTANTIATION = 'instantiation_failed';
@@ -25,7 +23,7 @@ final class ToolExecutionFailedEvent {
   public const REASON_RESULT = 'result_failed';
   public const REASON_EXECUTION = 'execution_failed';
 
-  // Policy-related failure reasons
+  // Policy-related failure reasons.
   public const REASON_POLICY = 'policy_blocked';
   public const REASON_POLICY_APPROVAL = 'policy_approval_required';
   public const REASON_POLICY_BUDGET = 'policy_budget_exceeded';
@@ -33,16 +31,23 @@ final class ToolExecutionFailedEvent {
   public const REASON_POLICY_SCOPE = 'policy_scope_required';
 
   /**
+   * Cached list of all reason constants.
+   *
+   * @var array<string, string>|null
+   */
+  private static ?array $cachedReasons = null;
+
+  /**
    * @param string $toolName
    *   MCP tool name.
    * @param string $pluginId
    *   Implementation-specific plugin identifier.
    * @param array<string, mixed> $arguments
-   *   Sanitized tool arguments.
+   *   Sanitized tool arguments (caller must redact sensitive data).
    * @param string $reason
    *   Failure reason (use REASON_* constants).
-   * @param CallToolResult|null $result
-   *   MCP call tool result if available.
+   * @param object|null $result
+   *   Tool result object if available. When using mcp/sdk, this is a CallToolResult.
    * @param \Throwable|null $exception
    *   Exception thrown during execution, if any.
    * @param float $durationMs
@@ -55,11 +60,43 @@ final class ToolExecutionFailedEvent {
     public readonly string $pluginId,
     public readonly array $arguments,
     public readonly string $reason,
-    public readonly ?CallToolResult $result,
+    public readonly ?object $result,
     public readonly ?\Throwable $exception,
     public readonly float $durationMs,
     public readonly string|int|null $requestId,
   ) {}
+
+  /**
+   * Get all defined failure reason constants.
+   *
+   * @return array<string, string>
+   *   Map of constant names to values (e.g., ['REASON_VALIDATION' => 'validation_failed']).
+   */
+  public static function allReasons(): array {
+    if (self::$cachedReasons === null) {
+      self::$cachedReasons = [];
+      $reflection = new \ReflectionClass(self::class);
+      foreach ($reflection->getConstants() as $name => $value) {
+        if (str_starts_with($name, 'REASON_')) {
+          self::$cachedReasons[$name] = $value;
+        }
+      }
+    }
+    return self::$cachedReasons;
+  }
+
+  /**
+   * Check if a reason string is a valid defined constant.
+   *
+   * @param string $reason
+   *   The reason to validate.
+   *
+   * @return bool
+   *   TRUE if the reason matches a REASON_* constant value.
+   */
+  public static function isValidReason(string $reason): bool {
+    return in_array($reason, self::allReasons(), true);
+  }
 
   /**
    * Check if failure was due to a policy restriction.

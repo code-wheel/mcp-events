@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace CodeWheel\McpEvents;
 
-use Mcp\Schema\Result\CallToolResult;
-
 /**
  * Dispatched when an MCP tool execution completes successfully.
  *
@@ -23,9 +21,10 @@ final class ToolExecutionSucceededEvent {
    * @param string $pluginId
    *   Implementation-specific plugin identifier.
    * @param array<string, mixed> $arguments
-   *   Sanitized tool arguments.
-   * @param CallToolResult $result
-   *   MCP call tool result.
+   *   Sanitized tool arguments (caller must redact sensitive data).
+   * @param object $result
+   *   Tool result object. When using mcp/sdk, this is a CallToolResult.
+   *   Expected properties: content (array), isError (bool), structuredContent (mixed).
    * @param float $durationMs
    *   Execution duration in milliseconds.
    * @param string|int|null $requestId
@@ -35,7 +34,7 @@ final class ToolExecutionSucceededEvent {
     public readonly string $toolName,
     public readonly string $pluginId,
     public readonly array $arguments,
-    public readonly CallToolResult $result,
+    public readonly object $result,
     public readonly float $durationMs,
     public readonly string|int|null $requestId,
   ) {}

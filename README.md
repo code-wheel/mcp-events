@@ -2,6 +2,8 @@
 
 Standardized event classes for MCP (Model Context Protocol) tool execution lifecycle in PHP.
 
+**Zero dependencies** - pure PHP 8.1+, framework-agnostic.
+
 ## Installation
 
 ```bash
@@ -119,7 +121,7 @@ Dispatched when tool execution completes successfully.
 | `toolName` | string | MCP tool name |
 | `pluginId` | string | Implementation plugin ID |
 | `arguments` | array | Sanitized tool arguments |
-| `result` | CallToolResult | MCP SDK result object |
+| `result` | object | Result object (e.g., CallToolResult from mcp/sdk) |
 | `durationMs` | float | Execution duration in ms |
 | `requestId` | string\|int\|null | MCP request correlation ID |
 
@@ -133,7 +135,7 @@ Dispatched when tool execution fails.
 | `pluginId` | string | Implementation plugin ID |
 | `arguments` | array | Sanitized tool arguments |
 | `reason` | string | Failure reason constant |
-| `result` | CallToolResult\|null | MCP result if available |
+| `result` | object\|null | Result object if available |
 | `exception` | Throwable\|null | Exception if thrown |
 | `durationMs` | float | Duration until failure in ms |
 | `requestId` | string\|int\|null | MCP request correlation ID |
@@ -166,6 +168,36 @@ if ($event->isPolicyFailure()) {
 if ($event->hasException()) {
     $exception = $event->exception;
 }
+
+// Get all valid failure reasons
+$allReasons = ToolExecutionFailedEvent::allReasons();
+// ['REASON_VALIDATION' => 'validation_failed', ...]
+
+// Validate a reason string
+if (ToolExecutionFailedEvent::isValidReason($reason)) {
+    // Valid reason
+}
+```
+
+## Framework Integration
+
+This package has zero dependencies. When using with `mcp/sdk`, the `result` object will be a `CallToolResult`:
+
+```php
+// With mcp/sdk (optional)
+use Mcp\Schema\Result\CallToolResult;
+
+$event = new ToolExecutionSucceededEvent(
+    toolName: 'my_tool',
+    pluginId: 'my_module.my_tool',
+    arguments: [],
+    result: $callToolResult, // CallToolResult from mcp/sdk
+    durationMs: 10.5,
+    requestId: null,
+);
+
+// Access result properties
+$structured = $event->result->structuredContent;
 ```
 
 ## License

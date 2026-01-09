@@ -44,8 +44,11 @@ final class ToolExecutionEventsTest extends TestCase {
   }
 
   public function testToolExecutionSucceededEventProperties(): void {
-    // Create a mock CallToolResult
-    $result = $this->createMock(\Mcp\Schema\Result\CallToolResult::class);
+    // Create a simple result object (framework-agnostic)
+    $result = new \stdClass();
+    $result->content = [['type' => 'text', 'text' => 'Success']];
+    $result->isError = false;
+    $result->structuredContent = ['data' => 'test'];
 
     $event = new ToolExecutionSucceededEvent(
       toolName: 'test_tool',
@@ -62,6 +65,25 @@ final class ToolExecutionEventsTest extends TestCase {
     $this->assertSame($result, $event->result);
     $this->assertSame(45.5, $event->durationMs);
     $this->assertSame('req-456', $event->requestId);
+  }
+
+  public function testToolExecutionSucceededEventAcceptsAnyObject(): void {
+    // Can use any object as result - anonymous class, stdClass, or CallToolResult
+    $result = new class {
+      public bool $isError = false;
+      public array $content = [];
+    };
+
+    $event = new ToolExecutionSucceededEvent(
+      toolName: 'test',
+      pluginId: 'test',
+      arguments: [],
+      result: $result,
+      durationMs: 0,
+      requestId: null,
+    );
+
+    $this->assertFalse($event->result->isError);
   }
 
   public function testToolExecutionFailedEventProperties(): void {
@@ -86,6 +108,25 @@ final class ToolExecutionEventsTest extends TestCase {
     $this->assertSame($exception, $event->exception);
     $this->assertSame(12.3, $event->durationMs);
     $this->assertSame('req-789', $event->requestId);
+  }
+
+  public function testToolExecutionFailedEventWithResultObject(): void {
+    $result = new \stdClass();
+    $result->isError = true;
+
+    $event = new ToolExecutionFailedEvent(
+      toolName: 'test',
+      pluginId: 'test',
+      arguments: [],
+      reason: ToolExecutionFailedEvent::REASON_RESULT,
+      result: $result,
+      exception: null,
+      durationMs: 0,
+      requestId: null,
+    );
+
+    $this->assertSame($result, $event->result);
+    $this->assertTrue($event->result->isError);
   }
 
   #[\PHPUnit\Framework\Attributes\DataProvider('policyFailureReasonProvider')]
@@ -183,6 +224,38 @@ final class ToolExecutionEventsTest extends TestCase {
     $this->assertSame('policy_budget_exceeded', ToolExecutionFailedEvent::REASON_POLICY_BUDGET);
     $this->assertSame('policy_dry_run', ToolExecutionFailedEvent::REASON_POLICY_DRY_RUN);
     $this->assertSame('policy_scope_required', ToolExecutionFailedEvent::REASON_POLICY_SCOPE);
+  }
+
+  public function testAllReasonsReturnsAllReasonConstants(): void {
+    $allReasons = ToolExecutionFailedEvent::allReasons();
+
+    $this->assertIsArray($allReasons);
+    $this->assertCount(11, $allReasons);
+    $this->assertArrayHasKey('REASON_VALIDATION', $allReasons);
+    $this->assertArrayHasKey('REASON_ACCESS_DENIED', $allReasons);
+    $this->assertArrayHasKey('REASON_POLICY', $allReasons);
+    $this->assertSame('validation_failed', $allReasons['REASON_VALIDATION']);
+  }
+
+  public function testAllReasonsIsCached(): void {
+    $first = ToolExecutionFailedEvent::allReasons();
+    $second = ToolExecutionFailedEvent::allReasons();
+
+    // Same array reference due to caching
+    $this->assertSame($first, $second);
+  }
+
+  public function testIsValidReasonReturnsTrueForDefinedReasons(): void {
+    $this->assertTrue(ToolExecutionFailedEvent::isValidReason('validation_failed'));
+    $this->assertTrue(ToolExecutionFailedEvent::isValidReason('access_denied'));
+    $this->assertTrue(ToolExecutionFailedEvent::isValidReason('policy_blocked'));
+    $this->assertTrue(ToolExecutionFailedEvent::isValidReason('policy_dry_run'));
+  }
+
+  public function testIsValidReasonReturnsFalseForUndefinedReasons(): void {
+    $this->assertFalse(ToolExecutionFailedEvent::isValidReason('invalid_reason'));
+    $this->assertFalse(ToolExecutionFailedEvent::isValidReason(''));
+    $this->assertFalse(ToolExecutionFailedEvent::isValidReason('VALIDATION_FAILED'));
   }
 
 }
