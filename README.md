@@ -237,3 +237,4 @@ $structured = $event->result->structuredContent;
 ## License
 
 MIT
+
